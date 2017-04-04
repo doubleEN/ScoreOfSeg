@@ -15,6 +15,13 @@ import java.util.Hashtable;
 
 public class Score {
 	
+	private static int sumInsertions=0;
+	private static int sumDeletions=0;
+	private static int sumSubstitutions=0;
+	private static int sumChanges=0;
+	private static int sumTruth=0;
+	private static int sumTest=0;
+	
 	private Hashtable<String, Integer> dict=new Hashtable<String, Integer>();
 	
 	public static void main(String[] args) throws IOException {
@@ -41,10 +48,25 @@ public class Score {
 		FileOutputStream goldFos=new FileOutputStream(new File("diff_src/left"));
 		FileOutputStream segFos=new FileOutputStream(new File("diff_src/right"));
 		
+		FileInputStream fis=new FileInputStream(new File("mid/midOutcome"));
+		BufferedReader br=new BufferedReader(new InputStreamReader(fis));
 		
+		//用于向结果文档里面追加内容的输出流
+		FileOutputStream fos=new FileOutputStream(new File("output/outcome"));
+		BufferedWriter bw=new BufferedWriter(new OutputStreamWriter(fos));
+		
+		//每次循环，midOutcome内容是变化的
 		while((goldLine=goldBr.readLine())!=null&&(segLine=segBr.readLine())!=null){
-			/*lineNum++;
-			if(goldLine==null&&segLine!=null){
+			//统计相关频数
+			int insertions=0;
+			int deletions=0;
+			int substitutions=0;
+			int changes=0;//changes=substitutions+deletions+insertions
+			int truthNum=0;
+			int testNum=0;
+			
+			lineNum++;
+			/*if(goldLine==null&&segLine!=null){
 				System.out.println("Warning:training is 0 but test is nonzero, possible misalignment at line "+lineNum+".");
 				continue;
 			}else if(goldLine!=null&&segLine==null){
@@ -58,13 +80,12 @@ public class Score {
 			System.out.println(Arrays.toString(segWords));
 			//int maxLength=goldWords.length>segWords.length?goldWords.length:segWords.length;
 			
-			System.out.println(goldWords.length);
-			System.out.println(segWords.length);
-			
 			int i=0;
 			while(i<goldWords.length){
 				if(i!=goldWords.length-1){
 					goldFos.write((goldWords[i]+"\n").getBytes());
+				}else{
+					goldFos.write(goldWords[i].getBytes());
 				}
 				goldFos.flush();
 				i++;
@@ -73,6 +94,8 @@ public class Score {
 			while(j<segWords.length){
 				if(j!=segWords.length-1){
 					segFos.write((segWords[j]+"\n").getBytes());
+				}else{
+					segFos.write(segWords[j].getBytes());
 				}
 				segFos.flush();
 				j++;
@@ -80,6 +103,71 @@ public class Score {
 			
 			//调用diff命令
 			OrderDiff.getOutcome("diff_src/left", "diff_src/right", "mid/midOutcome");
+			
+			
+			
+			String midLine=null;
+			while((midLine=br.readLine())!=null){
+				bw.write(midLine);
+				midLine=midLine.trim();//习惯去首尾
+				String[]parts=midLine.split("\\s+");
+				if(parts.length==3){
+					System.out.println(Arrays.toString(parts));
+					substitutions++;
+					changes++;
+				}else{
+					if(parts[0].equals(">")){
+						System.out.println(Arrays.toString(parts));
+						//test中多出的词
+						insertions++;
+						changes++;
+					}else if(parts[1].equals("<")){
+						System.out.println(Arrays.toString(parts));
+						//test中少了的词
+						deletions++;
+						changes++;
+					}//[, >, 年]
+				}
+			}
+			
+			truthNum=goldWords.length;
+			testNum=segWords.length;
+			
+			System.out.println("deletions:"+deletions+"  "+"insertions:"+insertions+" "+"substitutions:"+substitutions);
+			System.out.println("changes:"+changes);
+			System.out.println("truthNum:"+truthNum);
+			System.out.println("testNum:"+testNum);
+			
+			double recall=(testNum-substitutions-insertions)/(double)truthNum;
+			double precision=(testNum-substitutions-insertions)/(double)testNum;
+			
+			//将一次统计结果输入到结果文档中
+			bw.write("insertions:"+insertions);
+			bw.newLine();
+			bw.write("deletions:"+deletions);
+			bw.newLine();
+			bw.write("substitutions:"+substitutions);
+			bw.newLine();
+			bw.write("changes:"+changes);
+			bw.newLine();
+			bw.write("truthNum:"+truthNum);
+			bw.newLine();
+			bw.write("testNum:"+testNum);
+			bw.newLine();
+			bw.write("true words recall:"+recall);
+			bw.newLine();
+			bw.write("test words precision:"+precision);
+			bw.newLine();
+			
+			
+			//计入总量中
+			sumInsertions+=insertions;
+			sumDeletions+=deletions;
+			sumSubstitutions+=substitutions;
+			sumChanges+=changes;
+			sumTruth+=truthNum;
+			sumTest+=testNum;
+			
 			break;
 		}
 		
