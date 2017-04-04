@@ -1,10 +1,14 @@
 package com.rui.scoreOfSeg;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Hashtable;
@@ -33,6 +37,11 @@ public class Score {
 		String segLine=null;
 		int lineNum=0;
 		//换行符不算null
+		//同一个流中，只会在同一文件中追加写入的内容，不会产生覆盖的情况
+		FileOutputStream goldFos=new FileOutputStream(new File("diff_src/left"));
+		FileOutputStream segFos=new FileOutputStream(new File("diff_src/right"));
+		
+		
 		while((goldLine=goldBr.readLine())!=null&&(segLine=segBr.readLine())!=null){
 			/*lineNum++;
 			if(goldLine==null&&segLine!=null){
@@ -44,13 +53,34 @@ public class Score {
 			}*/
 			String [] goldWords=goldLine.split("\\s+");
 			String [] segWords=segLine.split("\\s+");
+			
 			System.out.println(Arrays.toString(goldWords));
 			System.out.println(Arrays.toString(segWords));
+			//int maxLength=goldWords.length>segWords.length?goldWords.length:segWords.length;
 			
-			int maxLength=goldWords.length>segWords.length?goldWords.length:segWords.length;
+			System.out.println(goldWords.length);
+			System.out.println(segWords.length);
 			
+			int i=0;
+			while(i<goldWords.length){
+				if(i!=goldWords.length-1){
+					goldFos.write((goldWords[i]+"\n").getBytes());
+				}
+				goldFos.flush();
+				i++;
+			}
+			int j=0;
+			while(j<segWords.length){
+				if(j!=segWords.length-1){
+					segFos.write((segWords[j]+"\n").getBytes());
+				}
+				segFos.flush();
+				j++;
+			}
 			
-			
+			//调用diff命令
+			OrderDiff.getOutcome("diff_src/left", "diff_src/right", "mid/midOutcome");
+			break;
 		}
 		
 		
