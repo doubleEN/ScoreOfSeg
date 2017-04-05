@@ -1,16 +1,11 @@
 package com.rui.scoreOfSeg;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 
 public class OrderDiff {
 
@@ -43,6 +38,7 @@ public class OrderDiff {
 		}
 		
 		fos.write(sen.getBytes());
+		fos.close();
 	}
 
 	public static void main(String[] args) throws IOException {

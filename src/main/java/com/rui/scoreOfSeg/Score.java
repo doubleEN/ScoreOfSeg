@@ -23,9 +23,11 @@ public class Score {
 	private static int sumTest = 0;
 	private static int oov = 0;
 
+	//问题：1.循环中频繁开启关闭流;2.空行的容错性;
 	//参数：词典输入路径，黄金分割文本路径，自定义分割文本路径，分词评测结果，自定义输出路径left，自定义输出路径right，自定义中间结果路径
 	public void toScore(String dictDest, String goldDest, String segDest, String outcomeDest, String left, String right,
 			String mid) throws IOException {
+		
 		setDict(dictDest);
 		File goldFile = new File(goldDest);
 		File segFile = new File(segDest);
@@ -96,21 +98,22 @@ public class Score {
 				segFos.flush();
 				j++;
 			}
-
+			
+			segFos.close();
+			goldFos.close();
 			// 调用diff命令
-			new OrderDiff().getOutcome(left, right, mid);
+			OrderDiff od=new OrderDiff();
+			od.getOutcome(left, right, mid);
 
 			FileInputStream fis = new FileInputStream(new File(mid));
 			BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 
 			String midLine = null;
-			boolean flag = false;
 
 			bw.write(">>>>>>" + goldDest + "---" + segDest + "<<<<<<" + " Line Num:" + lineNum);
 			bw.newLine();
 			bw.flush();
 			while ((midLine = br.readLine()) != null) {
-				flag = true;
 				bw.write(midLine);
 				bw.newLine();
 				bw.flush();
@@ -143,7 +146,8 @@ public class Score {
 					}
 				}
 			}
-
+			br.close();
+			fis.close();
 			truthNum = goldWords.length;
 			testNum = segWords.length;
 			double recall = (testNum - substitutions - insertions) / (double) truthNum;
@@ -215,7 +219,12 @@ public class Score {
 		bw.newLine();
 		bw.write("> OOV Rate:" + oovRate);
 		bw.flush();
-
+		
+		bw.close();
+		fos.close();
+		
+		segBr.close();
+		goldBr.close();
 	}
 
 	public void setDict(String dictDest) throws IOException {
