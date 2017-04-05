@@ -12,6 +12,9 @@ import java.util.Arrays;
 import java.util.Hashtable;
 
 public class Score {
+	
+	private Hashtable<String, Integer> dict=new Hashtable<String, Integer>();
+	
 	private static int sumInsertions=0;
 	private static int sumDeletions=0;
 	private static int sumSubstitutions=0;
@@ -20,20 +23,12 @@ public class Score {
 	private static int sumTest=0;
 	private static int oov=0;
 	
-	private Hashtable<String, Integer> dict=new Hashtable<String, Integer>();
-	
-	public static void main(String[] args) throws IOException {
-		Score s=new Score();
-		s.toScore("test/gold.utf8", "test/seg.utf8");
-	}
-	
-	private void toScore(String goldDest, String segDest) throws IOException {
-		setDict("test/pku_training_words.utf8");
+	public void toScore(String dictDest,String goldDest, String segDest,String outcomeDest) throws IOException {
+		setDict(dictDest);
 		
 		String left="diff_src/left";
 		String right="diff_src/right";
 		String mid="mid/midOutcome";
-		String out="output/outcome";
 		
 		File goldFile = new File(goldDest);
 		File segFile = new File(segDest);
@@ -50,7 +45,7 @@ public class Score {
 		//换行符不算null
 		
 		//用于向结果文档里面追加内容的输出流
-		FileOutputStream fos=new FileOutputStream(new File(out),true);
+		FileOutputStream fos=new FileOutputStream(new File(outcomeDest),true);
 		BufferedWriter bw=new BufferedWriter(new OutputStreamWriter(fos));
 		
 		//每次循环，midOutcome内容是变化的
