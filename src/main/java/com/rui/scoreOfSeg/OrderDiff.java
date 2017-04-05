@@ -14,12 +14,12 @@ import java.io.OutputStreamWriter;
 
 public class OrderDiff {
 
-	private static Process execDiff(String comp1, String comp2) throws IOException {
+	private Process execDiff(String comp1, String comp2) throws IOException {
 		return Runtime.getRuntime().exec("diff -y " + comp1 + " " + comp2);
 	}
 
-	public static void getOutcome(String comp1, String comp2,String outcomeDest) throws IOException {
-		FileOutputStream fos=new FileOutputStream(new File(outcomeDest));
+	public void getOutcome(String comp1, String comp2,String outcomeDest) throws IOException {
+		FileOutputStream fos=new FileOutputStream(new File(outcomeDest),false);
 		
 		Process process = execDiff(comp1, comp2);
 		
@@ -46,6 +46,6 @@ public class OrderDiff {
 	}
 
 	public static void main(String[] args) throws IOException {
-		OrderDiff.getOutcome("diff_src/1", "diff_src/2","mid/midOutcome");
+		new OrderDiff().getOutcome("diff_src/1", "diff_src/2","mid/midOutcome");
 	}
 }

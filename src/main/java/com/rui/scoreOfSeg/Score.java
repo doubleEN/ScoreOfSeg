@@ -5,32 +5,36 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Hashtable;
 
 public class Score {
-	
 	private static int sumInsertions=0;
 	private static int sumDeletions=0;
 	private static int sumSubstitutions=0;
 	private static int sumChanges=0;
 	private static int sumTruth=0;
 	private static int sumTest=0;
+	private static int oov=0;
 	
 	private Hashtable<String, Integer> dict=new Hashtable<String, Integer>();
 	
 	public static void main(String[] args) throws IOException {
 		Score s=new Score();
-		//s.setDict("test/words.utf8");
 		s.toScore("test/gold.utf8", "test/seg.utf8");
 	}
 	
 	private void toScore(String goldDest, String segDest) throws IOException {
+		setDict("test/pku_training_words.utf8");
+		
+		String left="diff_src/left";
+		String right="diff_src/right";
+		String mid="mid/midOutcome";
+		String out="output/outcome";
+		
 		File goldFile = new File(goldDest);
 		File segFile = new File(segDest);
 		
@@ -44,15 +48,9 @@ public class Score {
 		String segLine=null;
 		int lineNum=0;
 		//换行符不算null
-		//同一个流中，只会在同一文件中追加写入的内容，不会产生覆盖的情况
-		FileOutputStream goldFos=new FileOutputStream(new File("diff_src/left"));
-		FileOutputStream segFos=new FileOutputStream(new File("diff_src/right"));
-		
-		FileInputStream fis=new FileInputStream(new File("mid/midOutcome"));
-		BufferedReader br=new BufferedReader(new InputStreamReader(fis));
 		
 		//用于向结果文档里面追加内容的输出流
-		FileOutputStream fos=new FileOutputStream(new File("output/outcome"));
+		FileOutputStream fos=new FileOutputStream(new File(out),true);
 		BufferedWriter bw=new BufferedWriter(new OutputStreamWriter(fos));
 		
 		//每次循环，midOutcome内容是变化的
@@ -80,6 +78,10 @@ public class Score {
 			System.out.println(Arrays.toString(segWords));
 			//int maxLength=goldWords.length>segWords.length?goldWords.length:segWords.length;
 			
+			//同一个流中，只会在同一文件中追加写入的内容，不会产生覆盖的情况
+			FileOutputStream goldFos=new FileOutputStream(new File(left),false);
+			FileOutputStream segFos=new FileOutputStream(new File(right),false);
+			
 			int i=0;
 			while(i<goldWords.length){
 				if(i!=goldWords.length-1){
@@ -102,23 +104,41 @@ public class Score {
 			}
 			
 			//调用diff命令
-			OrderDiff.getOutcome("diff_src/left", "diff_src/right", "mid/midOutcome");
+			new OrderDiff().getOutcome(left, right, mid);
 			
-			
+			FileInputStream fis=new FileInputStream(new File(mid));
+			BufferedReader br=new BufferedReader(new InputStreamReader(fis));
 			
 			String midLine=null;
+			boolean flag=false;
+			
+			bw.write(">>>>>>"+goldDest+"---"+segDest+"<<<<<<"+" Line Num:"+lineNum);
+			bw.newLine();
+			bw.flush();
 			while((midLine=br.readLine())!=null){
+				flag=true;
 				bw.write(midLine);
+				bw.newLine();
+				bw.flush();
 				midLine=midLine.trim();//习惯去首尾
 				String[]parts=midLine.split("\\s+");
 				if(parts.length==3){
 					System.out.println(Arrays.toString(parts));
+					String oovWord=parts[2].trim();
+					//未登录词判断
+					if(!dict.containsKey(oovWord)){
+						oov++;
+					}
 					substitutions++;
 					changes++;
 				}else{
 					if(parts[0].equals(">")){
 						System.out.println(Arrays.toString(parts));
+						String oovWord=parts[1].trim();
 						//test中多出的词
+						if(!dict.containsKey(oovWord)){
+							oov++;
+						}
 						insertions++;
 						changes++;
 					}else if(parts[1].equals("<")){
@@ -126,20 +146,21 @@ public class Score {
 						//test中少了的词
 						deletions++;
 						changes++;
-					}//[, >, 年]
+					}
 				}
 			}
 			
 			truthNum=goldWords.length;
 			testNum=segWords.length;
+			double recall=(testNum-substitutions-insertions)/(double)truthNum;
+			double precision=(testNum-substitutions-insertions)/(double)testNum;
 			
 			System.out.println("deletions:"+deletions+"  "+"insertions:"+insertions+" "+"substitutions:"+substitutions);
 			System.out.println("changes:"+changes);
 			System.out.println("truthNum:"+truthNum);
 			System.out.println("testNum:"+testNum);
-			
-			double recall=(testNum-substitutions-insertions)/(double)truthNum;
-			double precision=(testNum-substitutions-insertions)/(double)testNum;
+			System.out.println("true words recall:"+recall);
+			System.out.println("test words precision:"+precision);
 			
 			//将一次统计结果输入到结果文档中
 			bw.write("insertions:"+insertions);
@@ -158,7 +179,7 @@ public class Score {
 			bw.newLine();
 			bw.write("test words precision:"+precision);
 			bw.newLine();
-			
+			bw.flush();
 			
 			//计入总量中
 			sumInsertions+=insertions;
@@ -168,9 +189,37 @@ public class Score {
 			sumTruth+=truthNum;
 			sumTest+=testNum;
 			
-			break;
 		}
 		
+		double talRecall=(sumTest-sumInsertions-sumSubstitutions)/(double)sumTruth;
+		double talPrecision=(sumTest-sumInsertions-sumSubstitutions)/(double)sumTest;
+		double f=(2*(talPrecision*talRecall))/((double)(talRecall+talPrecision));
+		double oovRate=oov/(double)sumTruth;
+		
+		bw.write(">>>>>  SUMMARY  <<<<<<");
+		bw.newLine();
+		bw.write("> TOTAL INSERTIONS:"+sumInsertions);
+		bw.newLine();
+		bw.write("> TOTAL DELETIONS:"+sumDeletions);
+		bw.newLine();
+		bw.write("> TOTAL SUBSTITUTIONS:"+sumSubstitutions);
+		bw.newLine();
+		bw.write("> TOTAL CHANGE:"+sumChanges);
+		bw.newLine();
+		bw.write("> TOTAL TRUE WORD COUNT:"+sumTruth);
+		bw.newLine();
+		bw.write("> TOTAL TEST WORD COUNT:"+sumTest);
+		bw.newLine();
+		bw.write("> OOV NUM:"+oov);
+		bw.newLine();
+		bw.write("> TOTAL TRUE WORDS RECALL:"+talRecall);
+		bw.newLine();
+		bw.write("> TOTAL TEST WORDS PRECISION:"+talPrecision);
+		bw.newLine();
+		bw.write("> HARMONIC MEAN F:"+f);
+		bw.newLine();
+		bw.write("> OOV Rate:"+oovRate);
+		bw.flush();
 		
 	}
 
