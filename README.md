@@ -1,4 +1,5 @@
 # ScoreOfSeg
+<<<<<<< HEAD
 
 --------------------------------------------
 
@@ -11,4 +12,7 @@ SIGHAN测试脚本的Java实现
 
 --------------------------------------------
 
+=======
+SIGHAN 测试脚本的Java实现
+>>>>>>> branch 'master' of https://github.com/doubleEN/ScoreOfSeg.git
 
