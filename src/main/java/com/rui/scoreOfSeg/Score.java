@@ -23,7 +23,7 @@ public class Score {
 	private static int sumTest = 0;
 	private static int oov = 0;
 
-	//问题：1.循环中频繁开启关闭流;2.空行的容错性;
+	//问题：1.循环中频繁开启关闭流;2.空行的容错性;3.命令行的容错性
 	//参数：词典输入路径，黄金分割文本路径，自定义分割文本路径，分词评测结果，自定义输出路径left，自定义输出路径right，自定义中间结果路径
 	public void toScore(String dictDest, String goldDest, String segDest, String outcomeDest, String left, String right,
 			String mid) throws IOException {
