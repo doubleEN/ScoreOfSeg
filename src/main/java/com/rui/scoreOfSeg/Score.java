@@ -71,10 +71,7 @@ public class Score {
 
 			System.out.println(Arrays.toString(goldWords));
 			System.out.println(Arrays.toString(segWords));
-			// int
-			// maxLength=goldWords.length>segWords.length?goldWords.length:segWords.length;
-
-			// 同一个流中，只会在同一文件中追加写入的内容，不会产生覆盖的情况
+			
 			FileOutputStream goldFos = new FileOutputStream(new File(left), false);
 			FileOutputStream segFos = new FileOutputStream(new File(right), false);
 
